@@ -1,0 +1,175 @@
+version: "3.3"
+
+# Эксперементальная сборка с запуском сервисов контейнеров от текущего пользователя host системы. 
+
+# Внимание! Необходимы 777 права на директорию "data" и все содержимое: chmod 777 -R docker/data
+
+# Статус контейнеров: docker ps
+# Лог контейнера: docker logs <container_name>
+# Выполнение команды в контейнере: docker exec -it <container_name> <command>
+# Вход в контейнер через sh: docker exec -it <container_name> sh
+# Вход в контейнер через bash, если есть: docker exec -it <container_name> bash
+
+# rm -rf docker/data/log/*.* && rm -rf docker/data/mysql/*.* && rm -rf docker/data/redis/*.* && rm -rf docker/data/socket/*.* && rm -rf docker/data/tmp/*.*
+
+networks:
+  demo:
+    driver: bridge
+
+services:
+
+  # Запуск и выполнение от текущего пользователя host системы
+  nginx:
+    container_name: "demo-nginx"
+    image: nginx:alpine
+    restart: unless-stopped
+    user: "${USER_ID}:${GROUP_ID}"
+    volumes:
+      - .:/var/www/src:rw
+
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/general:/etc/nginx/general:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+
+      - ./docker/data/log/nginx:/var/log/nginx:rw
+      - ./docker/data/tmp/nginx:/var/cache/nginx:rw
+      - ./docker/data/socket:/var/run:rw
+
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+    ports:
+      - 13380:12380
+      - 13343:443
+    networks:
+      - demo
+
+  # Запуск и выполнение от текущего пользователя host системы
+  fpm:
+    container_name: "demo-fpm"
+    build:
+      context: ./docker/php
+      dockerfile: DockerfilePhpFpm
+      args:
+        PHPREDIS_VERSION: "5.3.4"
+    restart: unless-stopped
+    user: "${USER_ID}:${GROUP_ID}"
+    volumes:
+      - .:/var/www/src:rw
+
+      - ./docker/php/php.ini:/usr/local/etc/php/php.ini:ro
+      - ./docker/php/pool.d/demo.php.conf:/usr/local/etc/php-fpm.d/demo.conf:ro
+
+      - ./docker/data/socket:/var/run:rw
+
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+    environment:
+      USER_ID: "${USER_ID}"
+      GROUP_ID: "${GROUP_ID}"
+    networks:
+      - demo
+
+  # Запуск и выполнение от текущего пользователя host системы
+  cli:
+    container_name: "demo-cli"
+    build:
+      context: ./docker/php
+      dockerfile: DockerfilePhpCli
+      args:
+        USER_NAME: "${USER_NAME}"
+        PHPREDIS_VERSION: "5.3.4"
+        SUPERCRONIC_VERSION: "0.1.12"
+        SUPERCRONIC_SHA1SUM: "048b95b48b708983effb2e5c935a1ef8483d9e3e"
+        APP_SRC_DIR: "/var/www/src"
+    restart: unless-stopped
+    stdin_open: true
+    user: "${USER_ID}:${GROUP_ID}"
+    volumes:
+      - .:/var/www/src:rw
+
+      - ./docker/cron/crontab:/etc/crontab:rw
+      - ./docker/php/php.ini:/usr/local/etc/php/php.ini:ro
+
+      - ./docker/data/socket:/var/run:rw
+
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+    environment:
+      USER_NAME: "${USER_NAME}"
+    ports:
+      - 13301:6001
+    networks:
+      - demo
+
+  # Запуск и выполнение от текущего пользователя host системы
+  # Входа в консоль mysql под root: docker exec -it demo-mysql mysql -u root
+  # Конфиги mysql: /opt/bitnami/mariadb/conf
+  mysql:
+    container_name: "demo-mysql"
+    build:
+      context: ./docker/mysql
+      dockerfile: DockerfileMysql
+      args:
+        USER_ID: "${USER_ID}"
+    restart: unless-stopped
+    volumes:
+      - ./docker/mysql/my_custom.cnf:/opt/bitnami/mariadb/conf/my_custom.cnf:ro
+
+      - ./docker/data/mysql/data:/bitnami/mariadb/data:rw
+      - ./docker/data/log/mysql:/var/log/mysql:rw
+      - ./docker/data/socket:/opt/bitnami/mariadb/tmp:rw
+
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    ports:
+      - 13306:3306
+    networks:
+      - demo
+
+  # Запуск и выполнение от текущего пользователя host системы
+  # Входа в консоль redis: docker exec -it demo-redis redis-cli
+  redis:
+    container_name: "demo-redis"
+    image: bitnami/redis:latest
+    restart: unless-stopped
+    user: "${USER_ID}:${GROUP_ID}"
+    volumes:
+      - ./docker/redis/redis.conf:/opt/bitnami/redis/mounted-etc/redis.conf:ro
+
+      - ./docker/data/redis/data:/bitnami/redis/data:rw
+      - ./docker/data/log/redis:/var/log/redis:rw
+      - ./docker/data/socket:/run:rw
+
+      - ./docker/data/redis/etc:/opt/bitnami/redis/etc:rw
+      - ./docker/data/redis/logs:/opt/bitnami/redis/logs:rw
+      - ./docker/data/redis/tmp:/opt/bitnami/redis/tmp:rw
+
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    networks:
+      - demo
+
+  # Запуск и выполнение от root пользователя
+  # Выполнение незапланированной ротации:
+  # docker exec -it demo-logrotate logrotate /usr/bin/logrotate.d/logrotate.conf
+  logrotate:
+    container_name: "demo-logrotate"
+    image: blacklabelops/logrotate
+    restart: unless-stopped
+    volumes:
+      - ./docker/data/log:/var/log_rotate:rw
+
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+    environment:
+      LOGS_DIRECTORIES: "/var/log_rotate"
+      LOGROTATE_INTERVAL: "daily"
+      LOGROTATE_COPIES: "10"
+      LOGROTATE_SIZE: "1M"
+      LOGROTATE_COMPRESSION: "compress"
+    networks:
+      - demo

@@ -1,0 +1,15 @@
+# https://github.com/aptible/supercronic/tree/master/cronexpr
+# .---------------- seconds (0 - 59)
+# | .-------------- minute (0 - 59)
+# | | .------------ hours (0 - 59)
+# | | | .---------- day of month (1 - 31)
+# | | | | .-------- month (1-12 or JAN-DEC)
+# | | | | | .------ day of week (0-6 or SUN-SAT)
+# | | | | | | .---- year (1970–2099 )
+# | | | | | | |
+# * * * * * * * command
+#--------------------------------------------------
+# * * * * * * * command
+# * * * * * * * command
+# * * * * * * * command
+

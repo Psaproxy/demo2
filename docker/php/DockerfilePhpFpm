@@ -1,0 +1,26 @@
+FROM php:8.0.3-fpm-alpine
+
+ARG PHPREDIS_VERSION
+
+## php
+
+RUN apk add --no-cache \
+  postgresql-dev
+
+RUN mkdir -p /usr/src/php/ext/redis; \
+    curl -fsSL --ipv4 https://github.com/phpredis/phpredis/archive/${PHPREDIS_VERSION}.tar.gz | tar xvz -C "/usr/src/php/ext/redis" --strip 1; \
+    docker-php-ext-install redis
+
+RUN docker-php-ext-install \
+  intl \
+  bcmath \
+  opcache \
+  pdo \
+  mysqli \
+  pdo_mysql \
+  pgsql \
+  pdo_pgsql
+
+##
+
+RUN rm -rf /var/cache/apk/

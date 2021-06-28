@@ -1,0 +1,73 @@
+FROM php:8.0.3-cli-alpine
+
+ARG USER_NAME
+ARG PHPREDIS_VERSION
+ARG SUPERCRONIC_VERSION
+ARG SUPERCRONIC_SHA1SUM
+ARG APP_SRC_DIR
+
+# From https://github.com/aptible/supercronic/releases
+ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v${SUPERCRONIC_VERSION}/supercronic-linux-amd64 \
+    SUPERCRONIC=supercronic-linux-amd64 \
+    SUPERCRONIC_SHA1SUM=${SUPERCRONIC_SHA1SUM}
+
+## general
+
+RUN apk add --no-cache \
+  busybox-suid \
+  bash \
+  nano
+
+## php
+
+RUN apk add --no-cache \
+  postgresql-dev
+
+RUN mkdir -p /usr/src/php/ext/redis; \
+    curl -fsSL --ipv4 https://github.com/phpredis/phpredis/archive/${PHPREDIS_VERSION}.tar.gz | tar xvz -C "/usr/src/php/ext/redis" --strip 1; \
+    docker-php-ext-install redis
+
+RUN docker-php-ext-install \
+  intl \
+  bcmath \
+  opcache \
+  pdo \
+  mysqli \
+  pdo_mysql \
+  pgsql \
+  pdo_pgsql
+
+## composer
+
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
+
+## npm
+
+RUN mkdir /home/${USER_NAME} && chmod 777 /home/${USER_NAME}
+
+RUN apk add --no-cache \
+  nodejs \
+  npm
+
+## supercronic
+
+RUN apk add --no-cache \
+  ca-certificates \
+  tini \
+  && curl -fsSLO "$SUPERCRONIC_URL" \
+  && echo "${SUPERCRONIC_SHA1SUM}  ${SUPERCRONIC}" | sha1sum -c - \
+  && chmod +x "$SUPERCRONIC" \
+  && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
+  && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic \
+  && apk del --purge \
+         ca-certificates
+
+##
+
+RUN rm -rf /var/cache/apk/
+
+WORKDIR ${APP_SRC_DIR}
+
+ENTRYPOINT [ "/sbin/tini", "--" ]
+
+CMD bash -c "/usr/local/bin/supercronic /etc/crontab"

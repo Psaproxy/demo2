@@ -1,0 +1,5 @@
+FROM bitnami/mariadb:latest
+
+ARG USER_ID
+
+USER ${USER_ID}

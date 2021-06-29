@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Infrastructure\MySql\Repository\ShortUrl;
+namespace App\Infrastructure\Core\ShortUrl\MySql;
 
-use App\Infrastructure\MySql\ReflectionClass;
+use App\Infrastructure\ReflectionClass;
 use app\models\ShortUrl as ShortUrlModel;
 use Core\ShortUrl\Props\NumberOfTransitions;
 use Core\ShortUrl\Props\OriginalUrl;

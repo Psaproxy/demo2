@@ -1,10 +1,10 @@
 <?php
 
+use App\Infrastructure\Core\ShortUrl\MySql\DataProvider as DataProviderShortUrl;
+use App\Infrastructure\Core\ShortUrl\MySql\RepoConverter as RepoConverterShortUrl;
+use App\Infrastructure\Core\ShortUrl\MySql\Repository as RepositoryShortUrl;
 use App\Infrastructure\Event\EventsPublisher;
 use App\Infrastructure\MySql\DBTransaction;
-use App\Infrastructure\MySql\Repository\ShortUrl\DataProvider as DataProviderShortUrl;
-use App\Infrastructure\MySql\Repository\ShortUrl\RepoConverter as RepoConverterShortUrl;
-use App\Infrastructure\MySql\Repository\ShortUrl\Repository as RepositoryShortUrl;
 use Core\Common\Action\IDBTransaction;
 use Core\Common\Event\IEventsPublisher;
 use Core\ShortUrl\IDataProvider as IDataProviderShortUrl;

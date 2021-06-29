@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Infrastructure\MySql\Repository\ShortUrl;
+namespace App\Infrastructure\Core\ShortUrl\MySql;
 
 use Core\ShortUrl\IDataProvider;
 use Core\ShortUrl\Props\OriginalUrl;

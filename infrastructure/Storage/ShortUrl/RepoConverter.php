@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Infrastructure\Core\ShortUrl\MySql;
+namespace App\Infrastructure\Storage\ShortUrl;
 
 use App\Infrastructure\ReflectionClass;
 use app\models\ShortUrl as ShortUrlModel;
